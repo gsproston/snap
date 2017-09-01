@@ -1,6 +1,8 @@
 dist/
 dist.zip
 log.txt
+setup.py
+*.bat
 
 # below is what is included by github
 
