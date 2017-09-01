@@ -1,3 +1,9 @@
+dist/
+dist.zip
+log.txt
+
+# below is what is included by github
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
