@@ -1,2 +1,0 @@
-Initialising the display
-Loading images
