@@ -1,7 +1,7 @@
 from distutils.core import setup
 import py2exe, os
 
-includes = ["classes","window"]
+includes = ["classes","constants","menus","regsnap","window"]
 dataFiles = []
 for files in os.listdir('images/'):
   f1 = 'images/' + files
@@ -9,4 +9,4 @@ for files in os.listdir('images/'):
     f2 = 'images', [f1]
     dataFiles.append(f2)
 
-setup(console=["snapdisp.py"],data_files=dataFiles)
+setup(console=["main.py"],data_files=dataFiles)
