@@ -111,9 +111,7 @@ class Menu:
     self.buttons = []
     # font sizes and type face
     self.titleSize = 42 # also title height 
-    self.textSize = 30 # also button height
     self.titleFont = pygame.font.SysFont("helvetica",self.titleSize)
-    self.textFont = pygame.font.SysFont("helvetica",self.textSize)
     # transparency settings
     self.alpha = 0
     self.targetAlpha = 0
@@ -121,47 +119,7 @@ class Menu:
     # dimensions
     self.w = 200
     self.h = 100
-    self.gap = 20 # space between buttons
-    
-  # from the mouse movement, finds if the mouse is now on a button
-  def movement(self,x,y):
-    y = y - self.gap*2 - self.titleSize
-    for i in range(0,len(self.buttons)):
-      if y <= self.textSize and y > 0:
-        self.buttons[i].colour = Color(80,80,80)
-      else:
-        self.buttons[i].colour = Color(0,0,0)
-      y = y - self.gap - self.textSize
-  
-  # from the mouse click, finds the button that was clicked and executes its command
-  def click(self,x,y):
-    y = y - self.gap*2 - self.titleSize
-    if y < 0:
-      # click registered on the title, exit
-      return
-    for i in range(0,len(self.buttons)):
-      if y <= self.textSize and y > 0:
-        self.buttons[i].execute()
-        return
-      y = y - self.gap - self.textSize
-    
-  def addButton(self,button):
-    self.buttons.append(button)
-    
-  def addCommand(self,bname,command):
-    for b in self.buttons:
-      if b.NAME == bname:
-        b.addCommand(command)
-        return
-    
-  def calcHeight(self):
-    h = self.titleSize + self.gap
-    for b in self.buttons:
-      h = h + self.gap + self.textSize
-    self.h = h
-    
-  def getDims(self):
-    return (self.w,self.h)
+    self.gap = 16 # space between buttons
     
   # returns the menu surface
   def getSurface(self):
@@ -173,11 +131,74 @@ class Menu:
     # add in the buttons
     cumh = self.titleSize+self.gap*2 # double gap between title and buttons
     for i in range(0,len(self.buttons)):
-      buttonSurf = self.textFont.render(self.buttons[i].NAME,4,self.buttons[i].colour)
+      b = self.buttons[i]
+      buttonSurf = b.getSurface()
       surf.blit(buttonSurf,((self.w-buttonSurf.get_width())/2.0,cumh))
-      cumh = cumh + self.textSize + self.gap
+      # if a drop down box is active, do not display lower buttons
+      if isinstance(b,Dropdown) and b.opened:
+        break
+      cumh = cumh + b.textSize + self.gap
     surf.set_alpha(self.alpha)
     return surf
+    
+  # from the mouse movement, finds if the mouse is now on a button
+  def movement(self,x,y):
+    y = y - self.gap*2 - self.titleSize
+    for i in range(0,len(self.buttons)):
+      if y <= self.buttons[i].textSize and y > 0:
+        self.buttons[i].onColour()
+      else:
+        self.buttons[i].offColour()
+      y = y - self.gap - self.buttons[i].textSize
+  
+  # from the mouse click, finds the button that was clicked and executes its command
+  def click(self,x,y):
+    y = y - self.gap*2 - self.titleSize
+    if y < 0:
+      # click registered on the title, exit
+      return
+    for i in range(0,len(self.buttons)):
+      b = self.buttons[i]
+      if y <= b.textSize and y > 0:
+        b.execute()
+        return
+      # if a dropdown box is active, make sure buttons below cannot be pressed
+      if isinstance(b,Dropdown) and b.opened:
+        return
+      y = y - self.gap - b.textSize
+    
+  def addButton(self,bname,bcom):
+    self.buttons.append(Button(bname,bcom,self))
+    
+  def addDropdown(self,bname,bopt,bcom):
+    self.buttons.append(Dropdown(bname,bopt,bcom,self))
+    
+  def addCommand(self,bname,command):
+    for b in self.buttons:
+      if b.NAME == bname:
+        b.addCommand(command)
+        return
+    
+  def calcDims(self):
+    h = self.titleSize + self.gap
+    dh = 0 # used to track additional height from dropdown boxes
+    for b in self.buttons:
+      h = h + self.gap + b.textSize
+      if isinstance(b,Dropdown):
+        dh = b.dh
+      else:
+        dh = dh - self.gap - b.textSize
+    self.h = h + max(0,dh)
+    # now find the width
+    titleSurf = self.titleFont.render(self.NAME,4,Color(0,0,0))
+    w = titleSurf.get_width()
+    for b in self.buttons:
+      bsurf = b.getSurface()
+      w = max(bsurf.get_width(),w)
+    self.w = w
+    
+  def getDims(self):
+    return (self.w,self.h)
       
   def show(self): # show the menu
     self.targetAlpha = 255
@@ -197,24 +218,32 @@ class Menu:
     for b in self.buttons:
       b.fade(self.fspeed)
       
-  def isHidden(self): # return True if all buttons are hidden
+  def isFaded(self): # return True if menu is completely faded
     for b in self.buttons:
-      if b.alpha > 0:
-        return False
-    return True
-  
-  def isShown(self): # returns true if all buttons are show
-    for b in self.buttons:
-      if b.alpha < 255:
+      if not b.isFaded():
         return False
     return True
     
 class Button:
-  def __init__(self,name,command):
+  def __init__(self,name,command,menu):
     self.NAME = name
+    self.MENU = menu
     self.alpha = 0
     self.targetAlpha = 0
     self.command = command
+    self.colour = Color(0,0,0)
+    self.textSize = 24 # also button height
+    self.textFont = pygame.font.SysFont("helvetica",self.textSize)
+    
+  def getSurface(self):
+    surf = self.textFont.render(self.NAME,4,self.colour)
+    surf.set_alpha(self.alpha)
+    return surf
+    
+  def onColour(self):
+    self.colour = Color(80,80,80)
+    
+  def offColour(self):
     self.colour = Color(0,0,0)
   
   def addCommand(self,command):
@@ -240,3 +269,77 @@ class Button:
       self.alpha = max(self.targetAlpha,self.alpha-fspeed)
     elif self.alpha < self.targetAlpha:
       self.alpha = min(self.targetAlpha,self.alpha+fspeed)
+      
+  def isFaded(self):
+    return (self.alpha == self.targetAlpha)
+
+# slight alteration of the button class
+class Dropdown(Button):
+  def __init__(self,name,options,command,menu):
+    Button.__init__(self,name,command,menu)
+    self.options = options
+    self.dropAlpha = 0
+    self.dropTargetAlpha = 0
+    self.opened = False
+    self.dw = 200
+    self.dh = 100
+    self.calcDims()
+    
+  def getSurface(self):
+    nameSurf = self.textFont.render("%s: " % self.NAME,4,Color(0,0,0))
+    selectedSurf = self.textFont.render(self.options[0],4,self.colour)
+    if self.opened:
+      # get the drop down menu
+      dropSurf = pygame.Surface((self.dw,self.dh))
+      dropSurf.fill(Color(255,255,255))
+      # add in all the options
+      y = 0 # keeps track of where to blit the next option
+      for i in range(1,len(self.options)):
+        optSurf = self.textFont.render(self.options[i],4,self.colour)
+        dropSurf.blit(optSurf,(0,y))
+        y = y + self.MENU.gap + self.textSize
+      # create main surface and blit everything
+      surf = pygame.Surface((nameSurf.get_width()+self.dw,self.textSize+self.MENU.gap+dropSurf.get_height()))
+      surf.fill(Color(255,255,255))
+      surf.blit(nameSurf,(0,0))
+      surf.blit(selectedSurf,(nameSurf.get_width(),0))
+      surf.blit(dropSurf,(nameSurf.get_width(),self.textSize+self.MENU.gap))
+    else: 
+      surf = pygame.Surface((nameSurf.get_width()+self.dw,self.textSize))
+      surf.fill(Color(255,255,255))
+      surf.blit(nameSurf,(0,0))
+      surf.blit(selectedSurf,(nameSurf.get_width(),0))
+    surf.set_alpha(self.alpha)
+    return surf
+    
+  def execute(self):
+    if self.opened:
+      self.close()
+    else:
+      self.open()
+    
+  def calcDims(self):
+    self.dh = (self.MENU.gap+self.textSize) * (len(self.options)-1)
+    w = 0
+    for opt in self.options:
+      optSurf = self.textFont.render(opt,4,self.colour)
+      w = max(optSurf.get_width(),w)
+    self.dw = w
+    
+  def open(self):
+    self.dropTargetAlpha = 255
+    self.opened = True
+    
+  def close(self):
+    self.dropTargetAlpha = 0
+    self.opened = False
+    
+  def fade(self,fspeed):
+    Button.fade(self,fspeed)
+    if self.dropAlpha > self.dropTargetAlpha:
+      self.dropAlpha = max(self.dropTargetAlpha,self.dropAlpha-fspeed)
+    elif self.dropAlpha < self.dropTargetAlpha:
+      self.dropAlpha = min(self.dropTargetAlpha,self.dropAlpha+fspeed)
+      
+  def isFaded(self):
+    return (self.dropAlpha == self.dropTargetAlpha and Button.isFaded(self))

@@ -1,45 +1,47 @@
-from classes import Menu, Button
+from classes import Menu
+import constants as cs # for ratios and resolutions
 
 def initMainMenu(startcom,optcom,exitcom):
   menu = Menu("Main Menu")
-  menu.addButton(Button("Start",startcom))
-  menu.addButton(Button("Options",optcom))
-  menu.addButton(Button("Credits",None))
-  menu.addButton(Button("Exit",exitcom))
-  menu.calcHeight()
+  menu.addButton("Start",startcom)
+  menu.addButton("Options",optcom)
+  menu.addButton("Credits",None)
+  menu.addButton("Exit",exitcom)
+  menu.calcDims()
   return menu
   
 def initPauseMenu():
   menu = Menu("Paused")
-  menu.addButton(Button("Options",None))
-  menu.addButton(Button("Back",None))
-  menu.addButton(Button("Main Menu",None))
-  menu.calcHeight()
+  menu.addButton("Options",None)
+  menu.addButton("Back",None)
+  menu.addButton("Main Menu",None)
+  menu.calcDims()
   return menu
   
 def initOptionsMenu(gpcom,dispcom,audcom):
   menu = Menu("Options")
-  menu.addButton(Button("Gameplay",gpcom))
-  menu.addButton(Button("Display",dispcom))
-  menu.addButton(Button("Audio",audcom))
-  menu.addButton(Button("Back",None)) # added after due to dependencies
-  menu.calcHeight()
+  menu.addButton("Gameplay",gpcom)
+  menu.addButton("Display",dispcom)
+  menu.addButton("Audio",audcom)
+  menu.addButton("Back",None) # added after due to dependencies
+  menu.calcDims()
   return menu
   
 def initGameplayMenu():
   menu = Menu("Gameplay")
-  menu.addButton(Button("Back",None)) # added after due to dependencies
-  menu.calcHeight()
+  menu.addButton("Back",None) # added after due to dependencies
+  menu.calcDims()
   return menu
   
 def initDisplayMenu():
   menu = Menu("Display")
-  menu.addButton(Button("Back",None)) # added after due to dependencies
-  menu.calcHeight()
+  menu.addDropdown("Ratio",cs.RATIOS,None)
+  menu.addButton("Back",None) # added after due to dependencies
+  menu.calcDims()
   return menu
   
 def initAudioMenu():
   menu = Menu("Audio")
-  menu.addButton(Button("Back",None)) # added after due to dependencies
-  menu.calcHeight()
+  menu.addButton("Back",None) # added after due to dependencies
+  menu.calcDims()
   return menu

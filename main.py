@@ -17,50 +17,50 @@ def draw(menu):
   screen.blit(menu.getSurface(),getMenuPos(menu)) #combine surfaces
   #pygame.draw.rect(screen,Color(0,0,0),menu.getSurface().get_rect().move(getMenuPos(menu)),1) # draw a rectangle around the menu
   pygame.display.flip()
-  
+ 
+# returns top left menu position in (x,y) format
 def getMenuPos(menu):
   screen = pygame.display.get_surface()
   return ((screen.get_width()-menu.w)/2.0,(screen.get_height()-menu.h)/2.0)
 
-# immediately hides and fades the given menu
-def hideAndFade(menu):
+def forceFade(menu):
   clock = pygame.time.Clock()
-  menu.hide()
-  while not menu.isHidden():
+  while not menu.isFaded():
     menu.fade()
     draw(menu)
     clock.tick(FPS)
+  
+# immediately hides and fades the given menu
+def forceHide(menu):
+  menu.hide()
+  forceFade(menu)
     
 # immediately shows and fades the given menu
-def showAndFade(menu):
-  clock = pygame.time.Clock()
+def forceShow(menu):
   menu.show()
-  while not menu.isShown():
-    menu.fade()
-    draw(menu)
-    clock.tick(FPS)
+  forceFade(menu)
 
 # called when the start button on the main menu is pressed
 def startRegSnap():
-  hideAndFade(activeMenu)
+  forceHide(activeMenu)
   # play snap
   regsnap.start()
   # fade menu back in
-  showAndFade(activeMenu)
+  forceShow(activeMenu)
     
 # called when the exit button is pressed
 def exitGame():
   global shutdown
   shutdown = True
   # fade menu out
-  hideAndFade(activeMenu)
+  forceHide(activeMenu)
   
 # fades out old menu, fades in the new one
 def changeMenu(menu):
   global activeMenu
-  hideAndFade(activeMenu)
+  forceHide(activeMenu)
   activeMenu = menu
-  showAndFade(activeMenu)
+  forceShow(activeMenu)
 
 if __name__ == "__main__":
   print("Starting")
@@ -74,6 +74,7 @@ if __name__ == "__main__":
   audioMenu = menus.initAudioMenu()
   optionsMenu =  menus.initOptionsMenu(lambda:changeMenu(gameplayMenu),lambda:changeMenu(displayMenu),lambda:changeMenu(audioMenu))
   mainMenu = menus.initMainMenu(startRegSnap,lambda:changeMenu(optionsMenu),exitGame)
+  # add remaining commands now that the other menus have been initialised
   optionsMenu.addCommand("Back",lambda:changeMenu(mainMenu))
   gameplayMenu.addCommand("Back",lambda:changeMenu(optionsMenu))
   displayMenu.addCommand("Back",lambda:changeMenu(optionsMenu))
