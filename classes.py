@@ -103,7 +103,6 @@ class Player:
     pool.reverse
     pool.extend(self.facedown)
     self.facedown = pool[:]
-    # empty the remaining face up piles
     
 class Menu:
   def __init__(self,name):
@@ -137,7 +136,7 @@ class Menu:
       # if a drop down box is active, do not display lower buttons
       if isinstance(b,Dropdown) and b.opened:
         break
-      cumh = cumh + b.textSize + self.gap
+      cumh = cumh + b.h + self.gap
     surf.set_alpha(self.alpha)
     return surf
     
@@ -145,11 +144,14 @@ class Menu:
   def movement(self,x,y):
     y = y - self.gap*2 - self.titleSize
     for i in range(0,len(self.buttons)):
-      if y <= self.buttons[i].textSize and y > 0:
-        self.buttons[i].onColour()
+      b = self.buttons[i]
+      newx = x -(self.w-b.w)/2.0
+      if y <= b.h and y > 0 and newx <= b.w and newx > 0:
+        # mouse is on this button!
+        b.movement(newx,y)
       else:
-        self.buttons[i].offColour()
-      y = y - self.gap - self.buttons[i].textSize
+        b.offColour()
+      y = y - self.gap - self.buttons[i].h
   
   # from the mouse click, finds the button that was clicked and executes its command
   def click(self,x,y):
@@ -159,13 +161,13 @@ class Menu:
       return
     for i in range(0,len(self.buttons)):
       b = self.buttons[i]
-      if y <= b.textSize and y > 0:
+      if y <= b.h and y > 0:
         b.execute()
         return
       # if a dropdown box is active, make sure buttons below cannot be pressed
       if isinstance(b,Dropdown) and b.opened:
         return
-      y = y - self.gap - b.textSize
+      y = y - self.gap - b.h
     
   def addButton(self,bname,bcom):
     self.buttons.append(Button(bname,bcom,self))
@@ -242,6 +244,9 @@ class Button:
     self.colour = Color(0,0,0)
     self.textSize = 24 # also button height
     self.textFont = pygame.font.SysFont("helvetica",self.textSize)
+    self.w = 100
+    self.h = self.textSize
+    self.calcDims()
     
   def getSurface(self):
     surf = self.textFont.render(self.NAME,4,self.colour)
@@ -250,6 +255,13 @@ class Button:
     bsurf.blit(surf,(0,0))
     bsurf.set_alpha(self.alpha)
     return bsurf
+    
+  def movement(self,x,y):
+    self.onColour()
+    
+  def calcDims(self):
+    surf = self.textFont.render(self.NAME,4,self.colour)
+    self.w = surf.get_width()
     
   def onColour(self):
     self.colour = Color(80,80,80)
@@ -286,29 +298,41 @@ class Button:
 
 # slight alteration of the button class
 class Dropdown(Button):
+  # name of button, dropbox selections, opening and closing commands, click command, parent menu
   def __init__(self,name,options,opencom,closecom,command,menu):
-    Button.__init__(self,name,command,menu)
     self.options = options
     self.dropAlpha = 0
     self.dropTargetAlpha = 0
     self.opened = False
     self.opencom = opencom # command for opening the dropbox
     self.closecom = closecom # command for closing the dropbox
-    self.dw = 200
+    self.dw = 200 # place holder dimensions for the dropbox ONLY
     self.dh = 100
-    self.calcDims()
+    self.onind = -1 # option index that the mouse is over
+    Button.__init__(self,name,command,menu)
     
   def getSurface(self):
+    print(self.onind)
     nameSurf = self.textFont.render("%s: " % self.NAME,4,Color(0,0,0))
-    selectedSurf = self.textFont.render(self.options[0],4,self.colour)
+    if 0 == self.onind:
+      colour = Color(80,80,80)
+    else:
+      colour = Color(0,0,0)
+    selectedSurf = self.textFont.render(self.options[0],4,colour)
+    # check if the menu is active
     if self.dropAlpha > 0:
       # get the drop down menu
       dropSurf = pygame.Surface((self.dw,self.dh))
       dropSurf.fill(Color(255,255,255))
       # add in all the options
       y = 0 # keeps track of where to blit the next option
+      # add options to the dropdown menu
       for i in range(1,len(self.options)):
-        optSurf = self.textFont.render(self.options[i],4,self.colour)
+        if i == self.onind:
+          colour = Color(80,80,80)
+        else:
+          colour = Color(0,0,0)
+        optSurf = self.textFont.render(self.options[i],4,colour)
         dropSurf.blit(optSurf,(0,y))
         y = y + self.MENU.gap + self.textSize
       dropSurf.set_alpha(self.dropAlpha)
@@ -326,12 +350,31 @@ class Dropdown(Button):
     surf.set_alpha(self.alpha)
     return surf
     
+  def movement(self,x,y):  
+    x = x - (self.w - self.dw)
+    if x < 0:
+      self.onind = -1
+      return
+    if self.opened:
+      limit = len(self.options)
+    else:
+      limit = 1
+    for i in range(0,limit):
+      opt = self.options[i]
+      surf = self.textFont.render(opt,4,self.colour)
+      if y <= self.textSize and y > 0 and x <= surf.get_width():
+        # mouse is on this option!
+        self.onind = i
+      y = y - self.MENU.gap - self.textSize
+    
   def execute(self):
     if self.opened:
       self.closecom(self)
     else:
       self.opencom(self)
     
+  # calculated the dimensions of the dropbox ONLY
+  # does not include 'Ratio: 16:19' for example
   def calcDims(self):
     self.dh = (self.MENU.gap+self.textSize) * (len(self.options)-1)
     w = 0
@@ -339,21 +382,30 @@ class Dropdown(Button):
       optSurf = self.textFont.render(opt,4,self.colour)
       w = max(optSurf.get_width(),w)
     self.dw = w
+    surf = self.textFont.render("%s: " % self.NAME,4,Color(0,0,0))
+    self.w = surf.get_width() + self.dw
+    
+  def offColour(self):
+    self.onind = -1
     
   def open(self):
     self.dropTargetAlpha = 255
     self.opened = True
+    self.h = self.h + self.dh
     
   def close(self):
     self.dropTargetAlpha = 0
     self.opened = False
+    self.h = self.h - self.dh
     
   def hide(self):
-    self.close()
+    if self.opened:
+      self.close() # close the dropbox before hiding
     Button.hide(self)
     
   def fade(self,fspeed):
     Button.fade(self,fspeed)
+    # additional code for fading the dropbox 
     if self.dropAlpha > self.dropTargetAlpha:
       self.dropAlpha = max(self.dropTargetAlpha,self.dropAlpha-fspeed)
     elif self.dropAlpha < self.dropTargetAlpha:
