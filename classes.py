@@ -119,6 +119,7 @@ class Menu:
     self.w = 200
     self.h = 100
     self.gap = 16 # space between buttons
+    self.onind = -1 # button which is currently being hovered over
     
   # returns the menu surface
   def getSurface(self):
@@ -131,6 +132,10 @@ class Menu:
     cumh = self.titleSize+self.gap*2 # double gap between title and buttons
     for i in range(0,len(self.buttons)):
       b = self.buttons[i]
+      if self.onind == i:
+        b.onColour()
+      else:
+        b.offColour()
       buttonSurf = b.getSurface()
       surf.blit(buttonSurf,((self.w-buttonSurf.get_width())/2.0,cumh))
       # if a drop down box is active, do not display lower buttons
@@ -149,25 +154,15 @@ class Menu:
       if y <= b.h and y > 0 and newx <= b.w and newx > 0:
         # mouse is on this button!
         b.movement(newx,y)
-      else:
-        b.offColour()
+        self.onind = i
+        return
       y = y - self.gap - self.buttons[i].h
+    self.onind = -1
   
   # from the mouse click, finds the button that was clicked and executes its command
-  def click(self,x,y):
-    y = y - self.gap*2 - self.titleSize
-    if y < 0:
-      # click registered on the title, exit
-      return
-    for i in range(0,len(self.buttons)):
-      b = self.buttons[i]
-      if y <= b.h and y > 0:
-        b.execute()
-        return
-      # if a dropdown box is active, make sure buttons below cannot be pressed
-      if isinstance(b,Dropdown) and b.opened:
-        return
-      y = y - self.gap - b.h
+  def click(self):
+    if self.onind >= 0:
+      self.buttons[self.onind].click()
     
   def addButton(self,bname,bcom):
     self.buttons.append(Button(bname,bcom,self))
@@ -209,6 +204,7 @@ class Menu:
       
   def hide(self): # hide the menu
     self.targetAlpha = 0
+    self.onind = -1
     for b in self.buttons:
       b.hide()
       
@@ -258,6 +254,9 @@ class Button:
     
   def movement(self,x,y):
     self.onColour()
+    
+  def click(self):
+    self.execute()
     
   def calcDims(self):
     surf = self.textFont.render(self.NAME,4,self.colour)
@@ -312,7 +311,6 @@ class Dropdown(Button):
     Button.__init__(self,name,command,menu)
     
   def getSurface(self):
-    print(self.onind)
     nameSurf = self.textFont.render("%s: " % self.NAME,4,Color(0,0,0))
     if 0 == self.onind:
       colour = Color(80,80,80)
@@ -350,9 +348,11 @@ class Dropdown(Button):
     surf.set_alpha(self.alpha)
     return surf
     
+  # find which option the mouse is over, and colour it differently 
   def movement(self,x,y):  
     x = x - (self.w - self.dw)
     if x < 0:
+      # mouse not on the right part
       self.onind = -1
       return
     if self.opened:
@@ -366,12 +366,21 @@ class Dropdown(Button):
         # mouse is on this option!
         self.onind = i
       y = y - self.MENU.gap - self.textSize
+     
+  # find which option the mouse has clicked, and execute the command
+  def click(self):
+    if self.onind >= 0:
+      self.execute(self.onind)
     
-  def execute(self):
-    if self.opened:
+  def execute(self,ind):
+    if ind != 0:
+      self.command(ind)
       self.closecom(self)
     else:
-      self.opencom(self)
+      if self.opened:
+        self.closecom(self)
+      else:
+        self.opencom(self)
     
   # calculated the dimensions of the dropbox ONLY
   # does not include 'Ratio: 16:19' for example

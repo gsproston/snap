@@ -61,6 +61,9 @@ def changeMenu(menu):
   forceHide(activeMenu)
   activeMenu = menu
   forceShow(activeMenu)
+  menuPos = getMenuPos(activeMenu)
+  mpos = pygame.mouse.get_pos()
+  activeMenu.movement(mpos[0]-menuPos[0],mpos[1]-menuPos[1])
   
 # runs when dropbox is opened
 def openDropbox(button):
@@ -75,6 +78,9 @@ def closeDropbox(button):
   forceFade(activeMenu)
   activeMenu.show()
   forceFade(activeMenu)
+  
+def changeRatio(ind):
+  print(ind)
 
 if __name__ == "__main__":
   print("Starting")
@@ -84,7 +90,7 @@ if __name__ == "__main__":
   
   # init menus
   gameplayMenu = menus.initGameplayMenu()
-  displayMenu = menus.initDisplayMenu(openDropbox,closeDropbox)
+  displayMenu = menus.initDisplayMenu(openDropbox,closeDropbox,changeRatio)
   audioMenu = menus.initAudioMenu()
   optionsMenu =  menus.initOptionsMenu(lambda:changeMenu(gameplayMenu),lambda:changeMenu(displayMenu),lambda:changeMenu(audioMenu))
   mainMenu = menus.initMainMenu(startRegSnap,lambda:changeMenu(optionsMenu),exitGame)
@@ -123,8 +129,7 @@ if __name__ == "__main__":
         menuPos = getMenuPos(activeMenu)
         mpos = pygame.mouse.get_pos()
         if Rect(menuPos,activeMenu.getDims()).collidepoint(mpos):
-          # if mouse is clicked on the menu, figure out where
-          activeMenu.click(mpos[0]-menuPos[0],mpos[1]-menuPos[1])
+          activeMenu.click()
     
     clock.tick(FPS)
   

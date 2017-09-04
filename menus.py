@@ -39,10 +39,10 @@ def initGameplayMenu():
   menu.calcDims()
   return menu
   
-def initDisplayMenu(opencom,closecom):
+def initDisplayMenu(opencom,closecom,ratcom):
   menu = Menu("Display")
-  menu.addDropdown("Ratio",cs.RATIOS,opencom,closecom,None)
-  menu.addDropdown("Resolution",res2string(0),opencom,closecom,None)
+  menu.addDropdown("Ratio",cs.RATIOS,opencom,closecom,ratcom)
+  menu.addDropdown("Resolution",res2string(0),opencom,closecom,ratcom)
   menu.addButton("Back",None) # added after due to dependencies
   menu.calcDims()
   return menu
