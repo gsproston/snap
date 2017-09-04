@@ -115,7 +115,7 @@ class Menu:
     # transparency settings
     self.alpha = 0
     self.targetAlpha = 0
-    self.fspeed = 5 # speed at which menu fades in and out
+    self.fspeed = 10 # speed at which menu fades in and out
     # dimensions
     self.w = 200
     self.h = 100
@@ -170,8 +170,8 @@ class Menu:
   def addButton(self,bname,bcom):
     self.buttons.append(Button(bname,bcom,self))
     
-  def addDropdown(self,bname,bopt,bcom):
-    self.buttons.append(Dropdown(bname,bopt,bcom,self))
+  def addDropdown(self,bname,bopt,bopencom,bclosecom,bcom):
+    self.buttons.append(Dropdown(bname,bopt,bopencom,bclosecom,bcom,self))
     
   def addCommand(self,bname,command):
     for b in self.buttons:
@@ -210,6 +210,14 @@ class Menu:
     for b in self.buttons:
       b.hide()
       
+  def hideBelow(self,dropbox): # hide buttons below dropbox
+    for i in range(0,len(self.buttons)-1):
+      if self.buttons[i] == dropbox:
+        # dropbox found, hide lower buttons
+        for j in range(i+1,len(self.buttons)):
+          self.buttons[j].hide()
+        return
+      
   def fade(self): # fade the menu in or out
     if self.alpha > self.targetAlpha:
       self.alpha = max(self.targetAlpha,self.alpha-self.fspeed)
@@ -237,8 +245,11 @@ class Button:
     
   def getSurface(self):
     surf = self.textFont.render(self.NAME,4,self.colour)
-    surf.set_alpha(self.alpha)
-    return surf
+    bsurf = pygame.Surface((surf.get_width(),surf.get_height()))
+    bsurf.fill(Color(255,255,255))
+    bsurf.blit(surf,(0,0))
+    bsurf.set_alpha(self.alpha)
+    return bsurf
     
   def onColour(self):
     self.colour = Color(80,80,80)
@@ -275,12 +286,14 @@ class Button:
 
 # slight alteration of the button class
 class Dropdown(Button):
-  def __init__(self,name,options,command,menu):
+  def __init__(self,name,options,opencom,closecom,command,menu):
     Button.__init__(self,name,command,menu)
     self.options = options
     self.dropAlpha = 0
     self.dropTargetAlpha = 0
     self.opened = False
+    self.opencom = opencom # command for opening the dropbox
+    self.closecom = closecom # command for closing the dropbox
     self.dw = 200
     self.dh = 100
     self.calcDims()
@@ -288,7 +301,7 @@ class Dropdown(Button):
   def getSurface(self):
     nameSurf = self.textFont.render("%s: " % self.NAME,4,Color(0,0,0))
     selectedSurf = self.textFont.render(self.options[0],4,self.colour)
-    if self.opened:
+    if self.dropAlpha > 0:
       # get the drop down menu
       dropSurf = pygame.Surface((self.dw,self.dh))
       dropSurf.fill(Color(255,255,255))
@@ -298,6 +311,7 @@ class Dropdown(Button):
         optSurf = self.textFont.render(self.options[i],4,self.colour)
         dropSurf.blit(optSurf,(0,y))
         y = y + self.MENU.gap + self.textSize
+      dropSurf.set_alpha(self.dropAlpha)
       # create main surface and blit everything
       surf = pygame.Surface((nameSurf.get_width()+self.dw,self.textSize+self.MENU.gap+dropSurf.get_height()))
       surf.fill(Color(255,255,255))
@@ -314,9 +328,9 @@ class Dropdown(Button):
     
   def execute(self):
     if self.opened:
-      self.close()
+      self.closecom(self)
     else:
-      self.open()
+      self.opencom(self)
     
   def calcDims(self):
     self.dh = (self.MENU.gap+self.textSize) * (len(self.options)-1)
@@ -333,6 +347,10 @@ class Dropdown(Button):
   def close(self):
     self.dropTargetAlpha = 0
     self.opened = False
+    
+  def hide(self):
+    self.close()
+    Button.hide(self)
     
   def fade(self,fspeed):
     Button.fade(self,fspeed)

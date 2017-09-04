@@ -61,6 +61,20 @@ def changeMenu(menu):
   forceHide(activeMenu)
   activeMenu = menu
   forceShow(activeMenu)
+  
+# runs when dropbox is opened
+def openDropbox(button):
+  activeMenu.hideBelow(button)
+  forceFade(activeMenu)
+  button.open()
+  forceFade(activeMenu)
+  
+# runs when dropbox is closed
+def closeDropbox(button):
+  button.close()
+  forceFade(activeMenu)
+  activeMenu.show()
+  forceFade(activeMenu)
 
 if __name__ == "__main__":
   print("Starting")
@@ -70,7 +84,7 @@ if __name__ == "__main__":
   
   # init menus
   gameplayMenu = menus.initGameplayMenu()
-  displayMenu = menus.initDisplayMenu()
+  displayMenu = menus.initDisplayMenu(openDropbox,closeDropbox)
   audioMenu = menus.initAudioMenu()
   optionsMenu =  menus.initOptionsMenu(lambda:changeMenu(gameplayMenu),lambda:changeMenu(displayMenu),lambda:changeMenu(audioMenu))
   mainMenu = menus.initMainMenu(startRegSnap,lambda:changeMenu(optionsMenu),exitGame)
