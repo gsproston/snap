@@ -1,6 +1,12 @@
 from classes import Menu
 import constants as cs # for ratios and resolutions
 
+def res2string(ind):
+  ress = []
+  for resolution in cs.RESS[ind]:
+    ress.append("%dx%d" % (resolution[0],resolution[1]))
+  return ress
+
 def initMainMenu(startcom,optcom,exitcom):
   menu = Menu("Main Menu")
   menu.addButton("Start",startcom)
@@ -36,6 +42,7 @@ def initGameplayMenu():
 def initDisplayMenu():
   menu = Menu("Display")
   menu.addDropdown("Ratio",cs.RATIOS,None)
+  menu.addDropdown("Resolution",res2string(0),None)
   menu.addButton("Back",None) # added after due to dependencies
   menu.calcDims()
   return menu
